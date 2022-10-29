@@ -480,7 +480,9 @@ function make_keys {
 	fi
 	make_file "$key_dir/avb_pkmd.bin" make_avb_pkmd "$key_dir/avb.pem"
 	if test -n "$generate_keys"; then
-		make_file "$key_dir/factory.sec" gen_signify_key "$key_dir/factory.pub"
+		#signify-openbsd requires the same filename (without ext) for secret and public key
+		#make_file "$key_dir/factory.sec" gen_signify_key "$key_dir/factory.pub"
+		gen_signify_key "$key_dir/factory.sec" "$key_dir/factory.pub"
 	elif ! test -e "$key_dir/factory.sec"; then
 		echo "Key $key_dir/factory.sec not found, use --generate-keys to generate keys automatically" >&2
 		exit 1
