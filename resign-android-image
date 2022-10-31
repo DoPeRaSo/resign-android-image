@@ -1218,7 +1218,8 @@ function patch_apk_apktool {
 
 	java -jar "$apktool" d $opts -p "$framework_dir" -o "$work/files" "$in_zip"
 	"$cmd" "$work/files" "$@"
-	java -jar "$apktool" b -p "$framework_dir" -o "$work/out.apk" "$work/files"
+	#Increase HeapSize to 4GB
+	java -Xmx4g -jar "$apktool" b -p "$framework_dir" -o "$work/out.apk" "$work/files"
 	unzip -q -x -d "$work/out" "$work/out.apk"
 	work_r="$(realpath "$work")"
 	bsdtar -tf "$work/out.apk"|(cd "$work/out" && zip -0 -@ "$work_r/out0.apk")
