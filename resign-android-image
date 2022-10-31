@@ -118,6 +118,23 @@ fi
 
 image_parts="system vendor product system_ext odm vendor_dlkm odm_dlkm"
 
+# Starting with Android 13 shipped devices, the boot, addtional image_parts are also present
+#image_parts="$image_parts pvmfw system_dlkm vendor_kernel_boot"
+ramdisk_in_boot=false
+for dev in "blueline" "crosshatch" "sargo" "bonito" "flame" "coral" "sunfish" "bramble" "redfin" "barbet" "oriole" "raven" "bluejay"; do
+	if test $dev == $device; then
+		ramdisk_in_boot=true
+		break
+	fi
+done
+image_ramdisk_part=
+if test $ramdisk_in_boot = true; then
+	image_ramdisk_partition="boot"
+else
+	image_ramdisk_partition="init_boot"
+fi
+
+
 build_factory=
 build_factory_zip=
 build_ota=
@@ -517,6 +534,7 @@ function do_extract_ota_manifest {
 function download_ota {
 	curl "$ota_url.zip" -C - -o "$dir/ota.zip"
 	if ! "$otatools/bin/check_ota_package_signature" "$ota_cert" "$dir/ota.zip"; then
+	#if ! "python" "$otatools/releasetools/check_ota_package_signature.py" "$ota_cert" "$dir/ota.zip"; then
 		echo "Failed to verify OTA update signature!" >&2
 		exit 1
 	fi
@@ -1107,7 +1125,8 @@ function make_target_files_extracted {
 		with_temp_dir "$outdir/extract_root_and_system" extract_root_and_system "$dir/ota_payload/system.img" "$query"
 	fi
 
-	for b in boot vendor_boot; do
+	#TODO: vendor_kernel_boot?
+	for b in $image_ramdisk_partition vendor_boot; do
 		if test -e "$dir/ota_payload/$b.img"; then
 			d="$(echo "$b"|tr a-z A-Z)"
 			make_dir "$outdir/target_files_extracted/$d" make_extract_boot "$outdir/bootimg/$b" "$dir/ota_payload/$b.img"
@@ -1589,7 +1608,7 @@ function make_target_files_zip {
 		mkdir -p "$outdir/target_files/IMAGES"
 		ls -1 "$dir/ota_payload"|while read i; do
 			local done=
-			for j in $image_parts vbmeta boot vendor_boot; do
+			for j in $image_parts vbmeta boot init_boot vendor_boot; do
 				if test "$i" == "$j.img"; then
 					done=1
 				fi
@@ -1612,7 +1631,7 @@ function make_target_files_zip {
 			fi
 		done
 
-		for b in boot vendor_boot; do
+		for b in boot init_boot vendor_boot; do
 			if test -e "$dir/ota_payload/$b.img"; then
 				d="$(echo "$b"|tr a-z A-Z)"
 				make_file "$outdir/target_files/IMAGES/$b.img" make_boot_image "$b" "$dir/ota_payload/$b.img" "$outdir/bootimg/$b" "$outdir/target_files_signed/$d"
